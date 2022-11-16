@@ -7,53 +7,45 @@ import time
 import numpy as np
 
 ### Load training images and labels
-sift = cv2.ORB_create()
-def fd_sift(image) :
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    kps, des = sift.detectAndCompute(image, None)
-    return des if des is not None else np.array([]).reshape(0, 128)
-
-
-imageDirectory = './2022Fimgs/'
+# imageDirectory = './2022Fimgs/'
+imageDirectory = './2022Simgs/'
 
 with open(imageDirectory + 'train.txt', 'r') as f:
     reader = csv.reader(f)
     lines = list(reader)
 
-global_train_features = []
-# fixed_size = (33,25,3)
-for i in range(len(lines)):
-    image = cv2.imread(imageDirectory +lines[i][0]+".png")
-    # image.resize(fixed_size)
-    fv_sift = fd_sift(image)
-    global_feature = np.hstack([fv_sift])
-    # global_feature.resize(fixed_size)
-    global_train_features.append(global_feature)
-
-
 # this line reads in all images listed in the file in GRAYSCALE, and resizes them to 33x25 pixels
-# train = []
-# for i in range(len(lines)):
+# train = np.array([np.array(cv2.resize(cv2.imread(imageDirectory +lines[i][0]+".png",0),(33,25))) for i in range(len(lines))])
+# train = np.zeros((len(lines),64,64,3))
+train = np.zeros((len(lines),64,64))
 
-#     orig_img = cv2.imread(imageDirectory +lines[i][0]+".png")
-#     w,h,_ = orig_img.shape
-#     crop_w = int(w*0.3)
-#     crop_h = int(h*0.3)
-#     x = w//2
-#     y = h//2
+for j in range(len(lines)):
+    img = cv2.imread(imageDirectory +lines[j][0]+".jpg",0)
 
-#     crop_img = orig_img[x-crop_w:x+crop_w, y-crop_h:y+crop_h]
-#     train.append(cv2.resize(crop_img,(33,25)))
+    enter=False
+    # gray = cv2.medianBlur(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY), 5)
+    # (thresh, blackAndWhiteImage) = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
+    (thresh, blackAndWhiteImage) = cv2.threshold(img, 100, 255, cv2.THRESH_BINARY)
+    edges = cv2.Canny(blackAndWhiteImage, 50, 200)
+    contours, hierarchy = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    for (i, c) in enumerate(sorted_contours):
+        x, y, w, h = cv2.boundingRect(c)
+        cropped_contour = img[y:y + h, x:x + w]
+        if enter==False:
+            enter=True
+            crop_img=cropped_contour
+    # print('trainig',j)
+    train_image=cv2.resize(crop_img,(64,64),interpolation=cv2.INTER_LINEAR)
+    # train[j,:,:,:] = train_image
+    train[j,:,:] = train_image
 
-# train = np.array([np.array(cv2.resize(img,(33,25))) for i in range(len(lines))])
-train = np.asarray(global_train_features)
-print('train shape',train.shape)
-print('train type',type(train))
 
 # here we reshape each image into a long vector and ensure the data type is a float (which is what KNN wants)
-train_data = train.flatten().reshape(len(lines), -1)
-# train_data = train_data.astype(np.float32)
+# train_data = train.flatten().reshape(len(lines), 64*64*3)
+train_data = train.flatten().reshape(len(lines), 64*64)
+train_data = train_data.astype(np.float32)
 
 # read in training labels
 train_labels = np.array([np.int32(lines[i][1]) for i in range(len(lines))])
@@ -69,7 +61,8 @@ if(__debug__):
 	cv2.namedWindow( Title_images, cv2.WINDOW_AUTOSIZE )
 
 
-imageDirectory = './2022Fimgs/'
+# imageDirectory = './2022Fimgs/'
+imageDirectory = './2022Simgs/'
 
 ### Run test images
 with open(imageDirectory + 'test.txt', 'r') as f:
@@ -79,48 +72,40 @@ with open(imageDirectory + 'test.txt', 'r') as f:
 correct = 0.0
 confusion_matrix = np.zeros((6,6))
 
-k = 21
+k = 5
 
 for i in range(len(lines)):
-    # original_img = cv2.imread(imageDirectory+lines[i][0]+".png",0)
+    original_img = cv2.imread(imageDirectory+lines[i][0]+".jpg",0)
+    # img = cv2.imread(imageDirectory +lines[j][0]+".png")
     # test_img = np.array(cv2.resize(cv2.imread(imageDirectory+lines[i][0]+".png",0),(33,25)))
-   
-    # test_img = []
-    
-    # original_img = cv2.imread(imageDirectory +lines[i][0]+".png")
-    # h,w,_ = orig_img.shape
-    # crop_w = int(w*0.3)
-    # crop_h = int(h*0.3)
-    # x = h//2
-    # y = w//2
 
-    # crop_img = original_img[x-crop_h:x+crop_h, y-crop_w:y+crop_w]
-    # test_img.append(cv2.resize(crop_img,(33,25)))
-    # test_img = np.asarray(test_img)
-    # test_img = test_img[0,:,:,:]
+    # img = cv2.imread(imageDirectory +lines[93][0]+".png")
 
-    global_test_features = []
-    original_img = cv2.imread(imageDirectory +lines[i][0]+".png")
-    # original_img.resize(fixed_size)
-    fv_sift_test = fd_sift(original_img)
-    global_test_feature = np.hstack([fv_sift_test])
-    # global_test_feature.resize(fixed_size)
-    global_test_features.append(global_test_feature)
+    enter=False
+    # gray = cv2.medianBlur(cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY), 5)
+    # (thresh, blackAndWhiteImage) = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
+    (thresh, blackAndWhiteImage) = cv2.threshold(original_img, 100, 255, cv2.THRESH_BINARY)
+    edges = cv2.Canny(blackAndWhiteImage, 50, 200)
+    contours, hierarchy = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    for (j, c) in enumerate(sorted_contours):
+        x, y, w, h = cv2.boundingRect(c)
+        cropped_contour = original_img[y:y + h, x:x + w]
+        if enter==False:
+            enter=True
+            crop_img=cropped_contour
 
-    # print('test shape',test_img.shape)
-    # print('test type',type(test_img))
-
-    test_img = np.asarray(global_test_features)
-    test_img = test_img[0,:,:,:]
+    test_img=cv2.resize(crop_img,(64,64),interpolation=cv2.INTER_LINEAR)
 
     if(__debug__):
         cv2.imshow(Title_images, original_img)
-        # cv2.imshow(Title_resized, test_img)
+        cv2.imshow(Title_resized, test_img)
         key = cv2.waitKey()
         if key==27:    # Esc key to stop
             break
-    test_img = test_img.flatten().reshape(1, -1)
-    # test_img = test_img.astype(np.float32)
+    # test_img = test_img.flatten().reshape(1, 64*64*3)
+    test_img = test_img.flatten().reshape(1, 64*64)
+    test_img = test_img.astype(np.float32)
 
     test_label = np.int32(lines[i][1])
 
