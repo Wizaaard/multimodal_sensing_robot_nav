@@ -5,6 +5,7 @@ import sys
 import csv
 import time
 import numpy as np
+from sklearn.model_selection import cross_val_score
 
 ### Load training images and labels
 
@@ -100,6 +101,8 @@ svm.setKernel(cv2.ml.SVM_LINEAR)
 svm.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, int(1e4), 1e-6))
 svm.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
+# scores = cross_val_score(svm, train_data, train_labels, cv=5)
+# print(scores)
 if(__debug__):
 	# Title_images = 'Original Image'
     Title_contour = 'Contour Image'
