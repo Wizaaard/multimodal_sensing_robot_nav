@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 
 import cv2
-import sys
 import csv
-import time
 import numpy as np
-from sklearn.model_selection import cross_val_score
+
+### Get image directory from user
+img_dir = input("Please enter the image directory: ")
+f_type = input("Please enter the file type: ")
+
 
 ### Load training images and labels
 
-imageDirectory = './2022Fimgs/'
-file_type = '.png'
-
-# imageDirectory = './2022Simgs/'
-# file_type = '.jpg'
+imageDirectory = './'+img_dir+'/'
+file_type = '.'+f_type
 
 def crop_img(img_path:str, thres_area:int, crop_size:tuple)->np.array:
     """Perform data preprocessing on image. Find all the contour in an image then crop based on the 
@@ -28,7 +27,6 @@ def crop_img(img_path:str, thres_area:int, crop_size:tuple)->np.array:
             crop_img  :   (inp_size,3) np.array representing the output image
             cnt_img   :   (img.shape) np.array representing the original image with contours
         """
-
     img = cv2.imread(img_path)
     
     # convert the image to a binary image and apply median filter to smoothe the edges.
@@ -64,10 +62,13 @@ def crop_img(img_path:str, thres_area:int, crop_size:tuple)->np.array:
     crop_img=cv2.resize(crop_img,crop_size,interpolation=cv2.INTER_LINEAR)
     return crop_img, cnt_img
 
+try:
+    with open(imageDirectory + 'train.txt', 'r') as f:
+        reader = csv.reader(f)
+        lines = list(reader)
+except: 
+    raise FileNotFoundError('Wrong directory or file type')
 
-with open(imageDirectory + 'train.txt', 'r') as f:
-    reader = csv.reader(f)
-    lines = list(reader)
 
 # An array with all the training images
 train = np.zeros((len(lines),64,64,3))
@@ -87,9 +88,9 @@ train_data = train_data.astype(np.float32)
 train_labels = np.array([np.int32(lines[i][1]) for i in range(len(lines))])
 
 
-### Train knn classifier
-knn = cv2.ml.KNearest_create()
-knn.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
+# ### Train knn classifier
+# knn = cv2.ml.KNearest_create()
+# knn.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
 
 # Train the SVM
@@ -112,9 +113,13 @@ if(__debug__):
 
 
 ### Run test images
-with open(imageDirectory + 'test.txt', 'r') as f:
-    reader = csv.reader(f)
-    lines = list(reader)
+try:
+    with open(imageDirectory + 'test.txt', 'r') as f:
+        reader = csv.reader(f)
+        lines = list(reader)
+except:
+    raise FileNotFoundError('Wrong directory or file type')
+  
 
 correct = 0.0
 confusion_matrix = np.zeros((6,6))
