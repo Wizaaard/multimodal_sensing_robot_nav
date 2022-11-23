@@ -3,12 +3,16 @@
 import cv2
 import csv
 import numpy as np
+import pickle
+
+
 
 ### Get image directory from user
-img_dir = input("Please enter the image directory: ")
-f_type = input("Please enter the file type: ")
+# img_dir = input("Please enter the image directory: ")
+# f_type = input("Please enter the file type: ")
 
-
+img_dir = '2022Simgs'
+f_type = 'jpg'
 ### Load training images and labels
 
 imageDirectory = './'+img_dir+'/'
@@ -93,17 +97,22 @@ train_labels = np.array([np.int32(lines[i][1]) for i in range(len(lines))])
 # knn.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
 
-# Train the SVM
-svm = cv2.ml.SVM_create()
-svm.setType(cv2.ml.SVM_C_SVC)
-svm.setC(0.2)
-svm.setKernel(cv2.ml.SVM_LINEAR)
+# Train the SVM open cv
+cv_svm = cv2.ml.SVM_create()
+cv_svm.setType(cv2.ml.SVM_C_SVC)
+cv_svm.setC(0.2)
+cv_svm.setKernel(cv2.ml.SVM_LINEAR)
 # svm.setGamma(10)
-svm.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, int(1e4), 1e-6))
-svm.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
+cv_svm.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, int(1e4), 1e-6))
+cv_svm.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
-# scores = cross_val_score(svm, train_data, train_labels, cv=5)
-# print(scores)
+# Train the SVM sklean
+# clf = svm.SVC(kernel='linear')
+# clf.fit(train_data, train_labels)
+
+# pickle.dump(cv_svm,open('model.pkl', 'wb'))
+cv_svm.save('cv_svm')
+
 if(__debug__):
 	# Title_images = 'Original Image'
     Title_contour = 'Contour Image'
@@ -142,12 +151,19 @@ for i in range(len(lines)):
     test_img = test_img.astype(np.float32)
     test_label = np.int32(lines[i][1])
 
+    #knn prediction
     # ret, results, neighbours, dist = knn.findNearest(test_img, k)
-    _,ret = svm.predict(test_img)
+
+    # open cv svm prediction
+    _,ret = cv_svm.predict(test_img)
     if len(ret) == 0:
         ret = 0
     else:
         ret = ret[0][0]
+
+    # sklearn svm prediction
+    # dec = clf.decision_function(test_img)
+    # ret = np.argmax(dec , axis = 1)[0]
 
     if test_label == ret:
         print(str(lines[i][0]) + " Correct, " + str(ret))
