@@ -54,12 +54,12 @@ class ImageSubscriber(Node):
 
 def main():
 	rclpy.init() #init routine needed for ROS2.
-	video_subscriber = MinimalVideoSubscriber() #Create class object to be used.
+	image_subscriber = ImageSubscriber() #Create class object to be used.
 	
-	rclpy.spin(video_subscriber) # Trigger callback processing.		
+	rclpy.spin(image_subscriber) # Trigger callback processing.		
 
 	#Clean up and shutdown.
-	video_subscriber.destroy_node()  
+	image_subscriber.destroy_node()  
 	rclpy.shutdown()
 
 
